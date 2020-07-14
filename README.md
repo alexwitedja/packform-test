@@ -1,6 +1,13 @@
-## Backend setup
+# DB script setup
 
-# Endpoints
+1. Install mongodb and postgresql.
+2. Install python dependencies `pip3 install pymongo` and `pip3 install psycopg2`
+3. Find keywords `connection string` in `db_script/init_db.py` and replace connection string.
+4. Run the `init_db.py`
+
+# Backend setup
+
+## Endpoints
 
 /api/orders which returns json:
 ```
@@ -14,7 +21,7 @@
 }
 ```
 
-# Setup
+## Setup
 
 1. Install all dependencies:
 ```
@@ -29,4 +36,4 @@ go get github.com/lib/pq
 4. run the server `go run backend/main.go`.
 5. endpoint will be served in localhost:9999
 
-## Frontend setup
+# Frontend setup
