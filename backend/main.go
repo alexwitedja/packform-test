@@ -6,10 +6,12 @@ import (
 	"log"
 	"math"
 	"net/http"
+	"time"
 
 	"github.com/alexwitedja/packform-test-api/backend/models"
 	"github.com/alexwitedja/packform-test-api/backend/mongohelper"
 	"github.com/alexwitedja/packform-test-api/backend/pghelper"
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
@@ -20,6 +22,7 @@ import (
 // OrderPayload to be sent after request.
 type OrderPayload struct {
 	ID              string  `json:"_id"`
+	OrderName       string  `json:"order_name"`
 	CompanyName     string  `json:"company_name"`
 	CustomerName    string  `json:"customer_name"`
 	OrderDate       string  `json:"order_date"`
@@ -74,6 +77,7 @@ func getOrders(w http.ResponseWriter, r *http.Request) {
 		// add item our array
 		payload := OrderPayload{
 			ID:              order.ID,
+			OrderName:       order.OrderName,
 			CompanyName:     customerCompany.CompanyName,
 			CustomerName:    customer.Name,
 			OrderDate:       order.CreatedAt,
@@ -157,6 +161,66 @@ func getOrderValue(orderID string) *OrderValue {
 	return orderValue
 }
 
+// Get order by time range
+func getOrderByTime(start string, end string) []models.Order {
+	var orders []models.Order
+	starttime, err := time.Parse(time.RFC3339, start)
+	if err != nil {
+		log.Fatal(err)
+	}
+	endtime, err := time.Parse(time.RFC3339, end)
+	if err != nil {
+		log.Fatal(err)
+	}
+	pgdb.Where("created_at BETWEEN ? and ?", starttime, endtime).Find(&orders)
+
+	return orders
+}
+
+// DateRange struct to receive post request
+type DateRange struct {
+	Start string `json:"start"`
+	End   string `json:"end"`
+}
+
+func getOrdersBetween(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	if (*r).Method == "OPTIONS" {
+		return
+	}
+	var daterange DateRange
+	err := json.NewDecoder(r.Body).Decode(&daterange)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Create an array of orders
+	var payloads []OrderPayload
+
+	var orders = getOrderByTime(daterange.Start, daterange.End)
+
+	for _, order := range orders {
+		var customer models.Customer = getCustomer(order.CustomerID)
+		var customerCompany models.CustomerCompany = getCustomerCompany(customer.CompanyID)
+		orderValue := getOrderValue(order.ID)
+		payload := OrderPayload{
+			ID:              order.ID,
+			OrderName:       order.OrderName,
+			CompanyName:     customerCompany.CompanyName,
+			CustomerName:    customer.Name,
+			OrderDate:       order.CreatedAt,
+			DeliveredAmount: math.Ceil(orderValue.DeliveredAmount*100) / 100,
+			TotalAmount:     math.Ceil(orderValue.TotalAmount*100) / 100,
+		}
+
+		payloads = append(payloads, payload)
+	}
+
+	json.NewEncoder(w).Encode(payloads)
+}
+
 // ErrorResponse : This is error model.
 type ErrorResponse struct {
 	StatusCode   int    `json:"status"`
@@ -184,6 +248,12 @@ func main() {
 	r := mux.NewRouter()
 
 	r.HandleFunc("/api/orders", getOrders).Methods("GET")
+	r.HandleFunc("/api/ordersBetween", getOrdersBetween).Methods("POST")
 
-	log.Fatal(http.ListenAndServe(":9999", r))
+	// start server listen
+	// with error handling
+	log.Fatal(http.ListenAndServe(":9999", handlers.CORS(
+		handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type", "Authorization"}),
+		handlers.AllowedMethods([]string{"GET", "POST", "PUT", "HEAD", "OPTIONS"}),
+		handlers.AllowedOrigins([]string{"*"}))(r)))
 }

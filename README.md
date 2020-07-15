@@ -26,6 +26,7 @@
 1. Install all dependencies:
 ```
 go get -u github.com/gorilla/mux
+go get github.com/gorilla/handlers
 go get github.com/jinzhu/gorm
 go get go.mongodb.org/mongo-driver
 go get github.com/lib/pq
@@ -37,3 +38,10 @@ go get github.com/lib/pq
 5. endpoint will be served in localhost:9999
 
 # Frontend setup
+
+1. `cd to frontend/packform-test` and do `npm install`
+2. `npm run serve` open `localhost:9999`
+
+### Note
+There's a bug with the date range picker, filtering this way never
+works on the first try but any instances after will work fine.
