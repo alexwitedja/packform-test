@@ -9,7 +9,7 @@
 
 ## Endpoints
 
-/api/orders which returns json:
+`GET` /api/orders which returns array of json:
 ```
 {
     "_id": "1",
@@ -20,7 +20,24 @@
     "total_amount": 918.13
 }
 ```
-
+`POST` /api/ordersBetween that ACCEPTS json body:
+```
+{
+    "start": "2019-02-16T13:00:00.000Z",
+    "end": "2020-02-23T13:00:00.000Z"
+}
+```
+and in response sends array of json:
+```
+{
+    "_id": "1",
+    "company_name": "Roga & Kopyta",
+    "customer_name": "Ivan Ivanovich",
+    "order_date": "2020-01-02T15:34:12Z",
+    "delivered_amount": 6.73,
+    "total_amount": 918.13
+}
+```
 ## Setup
 
 1. Install all dependencies:
